@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>滑动切屏 - 移动Web切屏动画效果</title>
+    <meta name="keywords" content="移动Web切屏动画效果，梦令布孑，menglingbujie" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta itemprop="name" content="移动Web切屏动画效果"/>
+    <meta itemprop="description" name="description"  content="滑动切屏"/>
+    <style t ype="text/css">
+    body{
+    	background-color:gray;
+    }
+    .main {
+    	width:320px; height:100%;overflow:hidden;
+    	position:absolute;left:50%;margin-left:-160px;
+    	border:1px solid red;
+    }
+    .main > .page{
+    	width:100%;height:100%;
+    	/*animation-play-state: paused;*/
+    	/*-webkit-transition:all 1s ease-in-out;*/
+    	-webkit-animation-fill-mode: both;
+    	position:absolute;display:none;
+    }
+    .main > .page.active{display:block;}
+    .main > .page.slide1{
+    	background-color:red;
+    	z-index:3;
+    }
+    .main > .page.slide2{
+    	background-color:blue;
+    	z-index:2;
+    }
+    .main > .page.slide3{
+    	background-color:green;
+    	z-index:1;
+    }
+    .page.hide{display:none;}
+    .page.show{display:block;}
+    </style>
+    </head>
+    <body>
+    	<div class="main" id="main">
+    		<!-- <div class="box"></div> -->
+    		<section class="page slide1 active"></section>
+    		<section class="page slide2"></section>
+    		<section class="page slide3"></section>
+    	</div>
+    	<script type="text/javascript" src="resources/js/jquery-1.10.2.min.js"></script>
+    	<script type="text/javascript" src="resources/js/hammer.min.js"></script>
+    	<script type="text/javascript">
+    	var config = 
+    	{
+    		allPage:0,
+		currentPage:0,
+		prePage:0,
+		nextPage:0,
+		touch:false,
+		H:0,
+		direction:"",
+		touchObj:null,
+		initY:0,
+		touchStatus:true,
+    	}
+    	config.allPage=$('.page').size();
+    	setPageIndex();
+    	 function setPageIndex(){
+	        var CP=config.currentPage;
+	        config.nextPage=CP+1;
+	        config.prePage=CP-1;
+	        if(config.prePage<0)config.prePage=config.allPage-1;
+	        if(config.nextPage>=config.allPage)config.nextPage=0;
+	}
+    	function setCss3(obj,f,t,attach){
+            	var f=f||'none',t=t||'none';
+	       	obj.css({'transform':f,'transition':t,'-webkit-transform':f,'-webkit-transition':t})
+	      	if(attach)obj.css(attach);
+	}
+	var CP = 0,NP = 0,PP = 0;//current page , next page, prev page
+	config.H = $(window).height();//current window height
+    	var hammer = new Hammer(document.getElementById("main"));
+        	hammer.on('dragstart',onDragStart);
+        	hammer.on('drag',onDraging);
+        	hammer.on('dragend',onDragEnd);
+
+        	function onDragStart(evt)
+        	{
+        		// console.log("===drag start");
+        		if(!evt.gesture){return;}
+   
+        		var _ele = evt.target;
+        		config.isScroll = true;
+        		var Y=evt.gesture.deltaY,index;
+        		config.direction=evt.gesture.direction;
+        		index=(config.direction=='up')?config.nextPage:config.prePage;
+        		//next or prev ele
+	        	config.touchObj=$('.page').eq(index);
+
+	        	if(config.touchObj.is(":animated")){config.touchObj.stop(true, true);}
+	        	//show curr and next(prev) ele
+        		if(config.direction=="up"){
+        			config.initY=-config.H;
+        			config.touchStatus = (config.currentPage==config.allPage-1)?false:true;
+        		}else if(config.direction=="down"){
+        			config.initY=config.H;
+        			config.touchStatus = (config.currentPage==0)?false:true;
+        		}
+        		if(!config.touchStatus){return;}
+        		$(_ele).css({"top":"0px","z-index":"2","display":"block"});
+        		config.touchObj.css({"top":-config.initY+"px","z-index":"5","display":"block"});
+        	}
+        	function onDraging(evt)
+        	{
+        		if(!config.touchStatus){return;}
+        		var _gesTure = evt.gesture;
+        		var _deltaY = _gesTure.deltaY;
+        		var _ele = evt.target;
+        		
+		setCss3(config.touchObj,'translate(0,'+(_deltaY)+'px)','none');
+        		var MS=1-(Math.abs(_deltaY)/config.H)*0.5,_deltaY=_deltaY*0.4;
+        		setCss3($(_ele),'translate(0px, '+_deltaY+'px) scale('+MS+')','none');
+        	}
+        	function onDragEnd(evt)
+        	{
+        		// console.log("====move end===")
+        		//check if next(prev) page
+        		if(!config.touchStatus){return;}
+        		var _ele = evt.target;
+        		var _gesTure = evt.gesture;
+        		var _deltaY = _gesTure.deltaY;
+
+        		// //change page critical value is 400px for Y
+        		if(Math.abs(_deltaY)>400)
+        		{
+        			//current ele change to prev or next ele
+        			//set prev or next ele is current ele
+        			setCss3($(_ele),'translate(0px, '+(config.initY)+'px) scale(0)','all 0.5s');
+        			setCss3(config.touchObj,'translate(0,'+(config.initY)+'px)',"all 0.5s");
+        			
+        			var index=(config.direction=='up')?config.nextPage:config.prePage;
+        			var cIndex=$('.page').eq(index).index('.page');
+        			config.currentPage = cIndex;
+        			setPageIndex();
+        		}else{
+        			//prev or next ele pos reset
+        			setCss3(config.touchObj,'translate(0,'+(-config.initY)+'px)',"all 1s");
+        			setCss3($(_ele),'translate(0px, 0px) scale(1)','all 0.5s');
+        		}
+        	}
+    	</script>
+    </body>
+    </html>
